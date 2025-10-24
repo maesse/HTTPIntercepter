@@ -14,13 +14,10 @@ WORKDIR /app
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 
-# Install backend deps
-COPY backend/pyproject.toml ./backend/pyproject.toml
-RUN pip install --no-cache-dir -U pip setuptools && \
-    pip install --no-cache-dir -e ./backend[dev]
-
-# Copy backend code and static
+# Copy backend code and install deps
 COPY backend/ ./backend/
+RUN pip install --no-cache-dir -U pip setuptools && \
+    pip install --no-cache-dir -e ./backend
 COPY --from=frontend /app/dist ./frontend-dist
 
 ENV FRONTEND_DIST_DIR=/app/frontend-dist

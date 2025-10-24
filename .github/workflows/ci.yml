@@ -50,3 +50,16 @@ jobs:
       - uses: actions/checkout@v4
       - name: Build Docker image
         run: docker build . -t httpintercepter:ci
+      - name: Run container
+        run: |
+          cid=$(docker run -d -p 8181:8181 httpintercepter:ci)
+          echo "CID=$cid" >> $GITHUB_OUTPUT
+          # wait for app
+          for i in {1..20}; do
+            if curl -fsS http://localhost:8181/healthz > /dev/null; then
+              echo "App is up"; break; fi; sleep 1; done
+          curl -fsS http://localhost:8181/healthz
+      - name: Stop container
+        if: always()
+        run: |
+          docker ps -q --filter ancestor=httpintercepter:ci | xargs -r docker stop

@@ -10,9 +10,25 @@
 				"python -m venv .venv && .venv\\Scripts\\python -m pip install -U pip && .venv\\Scripts\\pip install -e backend[dev] && .venv\\Scripts\\pytest -q backend"
 			],
 			"problemMatcher": [
-				"$pytest"
+				"$python"
 			],
 			"group": "build"
+		},
+		{
+			"label": "Backend: pip install",
+			"type": "shell",
+			"command": "${command:python.interpreterPath}",
+			"args": ["-m", "pip", "install", "-e", "backend[dev]"],
+			"options": { "cwd": "${workspaceFolder}" },
+			"problemMatcher": []
+		},
+		{
+			"label": "Frontend: npm install",
+			"type": "shell",
+			"command": "npm",
+			"args": ["install"],
+			"options": { "cwd": "${workspaceFolder}/frontend" },
+			"problemMatcher": []
 		}
 	]
 }

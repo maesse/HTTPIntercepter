@@ -29,5 +29,11 @@ async def test_inbound_and_list():
         assert res.status_code == 200
         full = res.json()
         assert full["body_text"] == "hello"
+        assert "raw_request_b64" in full and isinstance(full["raw_request_b64"], str)
+        # Download raw
+        res = await ac.get(f"/api/requests/{rid}/raw")
+        assert res.status_code == 200
+        raw = res.content
+        assert b"HTTP/" in raw and b"\r\n\r\n" in raw and raw.endswith(b"hello")
         res = await ac.delete(f"/api/requests/{rid}")
         assert res.status_code == 200
