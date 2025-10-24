@@ -1,0 +1,17 @@
+# General
+.DS_Store
+node_modules/
+.env
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.egg-info/
+.venv/
+
+# Frontend
+frontend/dist/
+
+# Python tooling
+.pytest_cache/
+.ruff_cache/

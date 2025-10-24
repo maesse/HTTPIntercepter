@@ -1,0 +1,18 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Backend tests",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"python -m venv .venv && .venv\\Scripts\\python -m pip install -U pip && .venv\\Scripts\\pip install -e backend[dev] && .venv\\Scripts\\pytest -q backend"
+			],
+			"problemMatcher": [
+				"$pytest"
+			],
+			"group": "build"
+		}
+	]
+}
