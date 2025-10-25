@@ -19,11 +19,13 @@
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.1.16",
+    "@mdi/font": "^7.4.47",
     "date-fns": "^4.1.0",
     "pinia": "^3.0.3",
     "tailwindcss": "^4.1.16",
     "vue": "^3.5.22",
-    "vue-router": "^4.6.3"
+    "vue-router": "^4.6.3",
+    "vuetify": "^3.7.0"
   },
   "devDependencies": {
     "@prettier/plugin-oxc": "^0.0.4",
@@ -41,7 +43,9 @@
     "oxlint": "~1.23.0",
     "prettier": "3.6.2",
     "typescript": "~5.9.0",
+    "sass": "^1.79.0",
     "vite": "npm:rolldown-vite@latest",
+    "vite-plugin-vuetify": "^2.0.3",
     "vite-plugin-vue-devtools": "^8.0.3",
     "vue-tsc": "^3.1.1"
   }

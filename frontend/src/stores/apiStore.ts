@@ -79,6 +79,7 @@ export const useApiStore = defineStore('api', () => {
 
   async function selectRequest(requestId: number) {
     console.log('[api] selectRequest: start id=', requestId)
+    selectedRequest.value = null
     const found = requestList.value.find(r => r.id === requestId)
     if (found) {
       found.is_new = false
