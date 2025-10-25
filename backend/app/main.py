@@ -63,6 +63,27 @@ class WSManager:
 
 ws_manager = WSManager()
 
+# Configuration: retention and capacity limits
+MAX_REQUESTS = int(os.getenv("INTERCEPTER_MAX_REQUESTS", "100"))
+RETENTION_SECONDS = int(os.getenv("INTERCEPTER_RETENTION_SECONDS", str(24 * 60 * 60)))
+
+
+def _prune_requests() -> None:
+    """Apply time-based retention and max-capacity trimming.
+
+    - Drop requests older than RETENTION_SECONDS
+    - Keep only most recent MAX_REQUESTS
+    """
+    global _requests
+    now_ts = datetime.now(timezone.utc).timestamp()
+    if RETENTION_SECONDS > 0:
+        cutoff = now_ts - RETENTION_SECONDS
+        _requests = [r for r in _requests if r.ts >= cutoff]
+    if MAX_REQUESTS > 0 and len(_requests) > MAX_REQUESTS:
+        # keep most recent by timestamp
+        _requests.sort(key=lambda r: r.ts)
+        _requests = _requests[-MAX_REQUESTS:]
+
 
 @app.api_route("/inbound", methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD"])
 async def inbound(request: Request):
@@ -104,6 +125,7 @@ async def inbound(request: Request):
     )
     _requests.append(item)
     _next_id += 1
+    _prune_requests()
     # Broadcast summary to websocket listeners
     summary = RequestSummary(
         id=item.id,
@@ -119,6 +141,7 @@ async def inbound(request: Request):
 
 @app.get("/api/requests", response_model=List[RequestSummary])
 async def list_requests():
+    _prune_requests()
     return [
         RequestSummary(
             id=r.id,

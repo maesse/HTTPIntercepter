@@ -20,6 +20,8 @@ RUN pip install --no-cache-dir -U pip setuptools && \
     pip install --no-cache-dir -e ./backend
 COPY --from=frontend /app/dist ./frontend-dist
 
-ENV FRONTEND_DIST_DIR=/app/frontend-dist
+ENV FRONTEND_DIST_DIR=/app/frontend-dist \
+    INTERCEPTER_MAX_REQUESTS=100 \
+    INTERCEPTER_RETENTION_SECONDS=86400
 EXPOSE 8181
 CMD ["python", "-m", "uvicorn", "backend.app.main:app", "--host", "0.0.0.0", "--port", "8181"]
