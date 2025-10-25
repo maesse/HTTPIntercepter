@@ -2,6 +2,8 @@
 
 A tiny debug HTTP interceptor: it exposes an `/inbound` endpoint that accepts any POST request, stores it in memory, and shows it in a minimalist Vue UI. Includes a FastAPI backend API for listing, viewing, and deleting captured requests.
 
+[![CI](https://github.com/maesse/HTTPIntercepter/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/maesse/HTTPIntercepter/actions/workflows/ci.yml)
+
 ## Structure
 
 - `backend/` — FastAPI app, pytest tests
