@@ -1,8 +1,11 @@
 <script setup lang="ts">
 import { useApiStore } from '@/stores/apiStore';
+import { formatISO9075 } from 'date-fns';
 const apiStore = useApiStore();
 apiStore.updateRequestList();
 apiStore.connectWS();
+
+
 </script>
 
 <template>
@@ -11,13 +14,33 @@ apiStore.connectWS();
 
     <!-- Sidebar -->
     <v-card elevation="2" class="w-80 ma-1 pa-1">
+
       <v-fade-transition mode="out-in">
         <v-list density="compact" lines="two">
-          <v-list-subheader class="flex w-100"><span>Requests</span>
-          <v-btn class="ml-15" size="small" color="primary" :loading="apiStore.isLoadingList" :disabled="apiStore.isLoadingList" @click="apiStore.updateRequestList()">
-            Refresh
-          </v-btn></v-list-subheader>
+          <v-list-subheader class="flex w-100 align-center border-b-lg flexfix">
+            <span>
+              Requests
+              <v-btn class="ma-1" icon="mdi-refresh" :size="24" variant="outlined" color="primary" :loading="apiStore.isLoadingList" :disabled="apiStore.isLoadingList" @click="apiStore.updateRequestList()"></v-btn>
+            </span>
+            <!-- Live indicator -->
+            <div class="d-inline-flex align-center ml-2" aria-label="WebSocket live status">
+              <span :class="['live-lamp', apiStore.isWsConnected ? 'on' : 'off']" />
+              <v-chip
+                size="x-small"
+                :color="apiStore.isWsConnected ? 'red-darken-2' : 'grey'"
+                variant="flat"
+                class="ml-1 live-chip"
+                label
+              >LIVE</v-chip>
+            </div>
+
+
+
+        </v-list-subheader>
           <v-list-item v-for="request in apiStore.requestList" :value="request" :key="request.id" @click="apiStore.selectRequest(request.id)" color="primary" border="sm" class="rounded ma-1 elevation-1">
+            <template #prepend>
+              <span class="font-mono text-xs text-grey-darken-2" style="min-width: 24px; display: inline-block;">#{{ request.id }}</span>
+            </template>
             <template #title>
               <div class="flex items-center gap-2">
                 <span class="font-semibold w-16">{{ request.method }}</span>
@@ -27,7 +50,8 @@ apiStore.connectWS();
             </template>
             <template #subtitle>
               <div class="flex items-center gap-2 text-xs text-gray-500">
-                <span>{{ apiStore.listWithRelative.find(r => r.id === request.id)?.since }}</span>
+                <span class="text-grey-darken-1">{{ formatISO9075(new Date(request.ts * 1000)) }}</span>
+                <span style="text-overflow: ellipsis;">• {{ apiStore.listWithRelative.find(r => r.id === request.id)?.since }}</span>
                 <v-progress-circular
                   v-if="apiStore.selectedLoadingId === request.id"
                   indeterminate
@@ -38,8 +62,10 @@ apiStore.connectWS();
               </div>
             </template>
             <template #append>
-              <v-icon v-if="apiStore.selectedRequest?.id === request.id" icon="mdi-chevron-right" />
+              <v-icon v-if="apiStore.selectedRequest?.id === request.id" icon="mdi-chevron-right" style="min-width: 24px;" />
+
             </template>
+
           </v-list-item>
 
 
@@ -94,3 +120,34 @@ apiStore.connectWS();
 
   </div>
 </template>
+<style>
+.flexfix > div {
+  flex: 1 0 100%;
+  display: flex;
+  justify-content: space-between;
+}
+</style>
+<style scoped>
+
+.live-lamp {
+  width: 10px;
+  height: 10px;
+  border-radius: 9999px;
+  display: inline-block;
+  background-color: #9e9e9e; /* grey */
+}
+.live-lamp.on {
+  background-color: #ff1744; /* red A400 */
+  box-shadow: 0 0 4px #ff1744, 0 0 8px rgba(255, 23, 68, 0.6);
+  animation: livePulse 1.2s ease-in-out infinite;
+}
+.live-chip {
+  color: #fff !important;
+  padding-inline: 6px;
+}
+@keyframes livePulse {
+  0% { box-shadow: 0 0 4px #ff1744, 0 0 8px rgba(255, 23, 68, 0.6); }
+  50% { box-shadow: 0 0 8px #ff1744, 0 0 16px rgba(255, 23, 68, 0.8); }
+  100% { box-shadow: 0 0 4px #ff1744, 0 0 8px rgba(255, 23, 68, 0.6); }
+}
+</style>

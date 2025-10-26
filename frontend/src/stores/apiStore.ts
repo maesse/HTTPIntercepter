@@ -57,6 +57,7 @@ export const useApiStore = defineStore('api', () => {
   const ws = ref<WebSocket | null>(null)
   const isLoadingList = ref(false)
   const selectedLoadingId = ref<number | null>(null)
+  const isWsConnected = ref(false)
 
   async function updateRequestList() {
     console.log('[api] updateRequestList: start')
@@ -117,6 +118,7 @@ export const useApiStore = defineStore('api', () => {
     ws.value = new WebSocket(url)
     ws.value.onopen = () => {
       console.log('[ws] open')
+      isWsConnected.value = true
     }
     ws.value.onmessage = (ev) => {
       try {
@@ -133,11 +135,13 @@ export const useApiStore = defineStore('api', () => {
     ws.value.onclose = () => {
       console.log('[ws] closed')
       ws.value = null
+      isWsConnected.value = false
       // basic backoff reconnect
       setTimeout(connectWS, 1000)
     }
     ws.value.onerror = (e) => {
       console.error('[ws] error', e)
+      isWsConnected.value = false
     }
   }
 
@@ -162,5 +166,5 @@ export const useApiStore = defineStore('api', () => {
     navigator.clipboard?.writeText(finalCmd)
   }
 
-  return { requestList, selectedRequest, updateRequestList, selectRequest, downloadRaw, connectWS, listWithRelative, copyCurl, isLoadingList, selectedLoadingId }
+  return { requestList, selectedRequest, updateRequestList, selectRequest, downloadRaw, connectWS, listWithRelative, copyCurl, isLoadingList, selectedLoadingId, isWsConnected }
 })

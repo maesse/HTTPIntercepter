@@ -1,5 +1,6 @@
 <script setup lang="ts">
 
+import { computed } from 'vue'
 import { useTheme } from 'vuetify'
 
 const theme = useTheme()
@@ -15,17 +16,39 @@ media?.addEventListener('change', (e) => {
 function toggleTheme() {
   theme.global.name.value = theme.global.name.value === 'dark' ? 'light' : 'dark'
 }
+// Full inbound URL (proxied in dev, same origin in prod)
+const inboundUrl = computed(() => `${location.origin}/inbound`)
+function copyInboundUrl() {
+  navigator.clipboard?.writeText(inboundUrl.value)
+}
 </script>
 
 <template>
   <v-app>
-    <v-app-bar density="comfortable">
-      <v-app-bar-title class="font-semibold">HTTP Interceptor
-        <div class="text-sm mr-4">
-        Send a request to: <a href="/inbound" class="text-primary">/inbound</a>
-      </div>
-      </v-app-bar-title>
+    <v-app-bar density="comfortable" extensionHeight="64px">
+      <v-app-bar-title class="font-semibold">
+        <div class="flex items-center">
+          <div>
+            HTTP Interceptor
+            <div class="text-sm mr-4">
+              Send a request to: <a href="/inbound" class="text-primary">/inbound</a>
+            </div>
+          </div>
+          <!-- Where to send requests -->
+           <div class="w-33">
+          <v-text-field
+              :model-value="inboundUrl"
+              readonly
+              density="compact"
+              variant="outlined"
+              hide-details
+              class="font-mono text-sm ma-auto"
+              append-inner-icon="mdi-content-copy"
+              @click:append-inner="copyInboundUrl"
+            /></div>
 
+        </div>
+      </v-app-bar-title>
       <v-btn icon="mdi-theme-light-dark" variant="text" @click="toggleTheme" :title="`Toggle theme (now: ${theme.global.name.value})`"></v-btn>
     </v-app-bar>
     <v-main>
