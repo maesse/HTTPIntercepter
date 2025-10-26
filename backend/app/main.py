@@ -98,6 +98,38 @@ async def inbound(request: Request):
     headers_ordered: List[Tuple[str, str]] = [
         (k.decode("latin-1"), v.decode("latin-1")) for (k, v) in headers_scope
     ]
+
+    # Optional proxy stripping: if PROXY_HOSTNAME matches x-forwarded-host, strip that proxy's headers
+    proxy_host = os.getenv("PROXY_HOSTNAME")
+    xf_host = request.headers.get("x-forwarded-host")
+    if proxy_host and xf_host:
+        proxy_host_l = proxy_host.strip().lower()
+        xf_hosts = [h.strip().lower() for h in xf_host.split(",") if h.strip()]
+        if proxy_host_l in xf_hosts:
+            remove_all = {
+                # handled specially below for partial removal
+                # 'x-forwarded-host',
+                "x-forwarded-port",
+                "x-forwarded-proto",
+                "x-forwarded-server",
+                "x-real-ip",
+            }
+            filtered: List[Tuple[str, str]] = []
+            for k, v in headers_ordered:
+                kl = k.lower()
+                if kl in remove_all:
+                    # drop these headers entirely when the target proxy is present
+                    continue
+                if kl == "x-forwarded-host":
+                    # Remove only the matching proxy hostname from the comma-separated list
+                    parts = [p.strip() for p in v.split(",") if p.strip()]
+                    kept = [p for p in parts if p.lower() != proxy_host_l]
+                    if kept:
+                        filtered.append((k, ", ".join(kept)))
+                    # if none left, drop the header entirely
+                    continue
+                filtered.append((k, v))
+            headers_ordered = filtered
     # Reconstruct a raw-like HTTP request stream (approximate; header casing may differ)
     http_version = request.scope.get("http_version", "1.1")
     target = request.url.path
@@ -109,13 +141,17 @@ async def inbound(request: Request):
         for name, value in headers_ordered
     )
     raw_bytes = start_line + header_lines + b"\r\n" + (body or b"")
+    # Build headers dict from filtered ordered list to keep removals consistent
+    headers_dict: Dict[str, str] = {}
+    for k, v in headers_ordered:
+        headers_dict[k] = v
     item = StoredRequest(
         id=_next_id,
         method=request.method,
         path=request.url.path,
-    ts=datetime.now(timezone.utc).timestamp(),
+        ts=datetime.now(timezone.utc).timestamp(),
         ip=request.client.host if request.client else "",
-        headers={k: v for k, v in request.headers.items()},
+        headers=headers_dict,
         headers_ordered=headers_ordered,
         query={k: v for k, v in request.query_params.items()},
         body_text=body_text,
