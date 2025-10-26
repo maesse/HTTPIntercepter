@@ -57,6 +57,7 @@ export const useApiStore = defineStore('api', () => {
   const isLoadingList = ref(false)
   const selectedLoadingId = ref<number | null>(null)
   const isWsConnected = ref(false)
+  const darkMode = ref(false)
 
   async function updateRequestList() {
     console.log('[api] updateRequestList: start')
@@ -208,5 +209,6 @@ export const useApiStore = defineStore('api', () => {
     isLoadingList,
     selectedLoadingId,
     isWsConnected,
+    darkMode,
   }
 })

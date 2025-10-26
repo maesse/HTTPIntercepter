@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, shallowRef } from 'vue'
 import { useApiStore } from '@/stores/apiStore'
+import type * as monaco from 'monaco-editor'
 import { formatISO9075 } from 'date-fns'
 const apiStore = useApiStore()
 apiStore.updateRequestList()
@@ -9,6 +10,23 @@ apiStore.connectWS()
 // Headers panel state and helpers
 const headersOpen = ref(true)
 const headerCount = computed(() => Object.keys(apiStore.selectedRequest?.headers || {}).length)
+
+const MONACO_EDITOR_OPTIONS = {
+  automaticLayout: true,
+}
+// watch(
+//   () => apiStore.darkMode,
+//   (newVal) => {
+//     console.log('Theme changed:', newVal)
+//     if (monacoIns.value) {
+//       console.log(monacoIns.value)
+//       ;(monacoIns.value as any).editor.setTheme(newVal ? 'vs-dark' : 'vs')
+//     }
+//     // if (editor.value) {
+//     //   editor.value.updateOptions({ theme: newVal ? 'vs-dark' : 'vs' })
+//     // }
+//   },
+// )
 
 // Authorization reveal toggle
 const showAuth = ref(false)
@@ -59,6 +77,37 @@ function decodeBasicAuth(value: string): { isBasic: boolean; user?: string; pass
     return { isBasic: false }
   }
 }
+
+const editor = shallowRef<monaco.editor.IStandaloneCodeEditor>()
+const monacoIns = shallowRef<unknown>()
+function handleMount(monacoEditor: monaco.editor.IStandaloneCodeEditor, monacoInstance: unknown) {
+  editor.value = monacoEditor
+  monacoIns.value = monacoInstance
+}
+
+// Derive Monaco language from Content-Type header
+function detectLanguageFromContentType(ct?: string | null): string {
+  if (!ct) return 'plaintext'
+  const base = ct.split(';')[0]?.trim().toLowerCase() || ''
+  // Broad matches first
+  if (base.includes('json')) return 'json'
+  if (base.includes('xml')) return 'xml'
+  if (base.includes('html')) return 'html'
+  if (base.includes('markdown')) return 'markdown'
+  if (base.includes('yaml') || base.endsWith('/yml')) return 'yaml'
+  if (base.includes('javascript') || base.endsWith('/js')) return 'javascript'
+  if (base.includes('typescript') || base.endsWith('/ts')) return 'typescript'
+  if (base.includes('css')) return 'css'
+  if (base.includes('sql')) return 'sql'
+  if (base.includes('form-urlencoded')) return 'plaintext'
+  if (base.startsWith('text/')) return 'plaintext'
+  return 'plaintext'
+}
+
+const monacoLanguage = computed(() => {
+  const ct = apiStore.selectedRequest?.headers?.['content-type']
+  return detectLanguageFromContentType(ct)
+})
 </script>
 
 <template>
@@ -149,7 +198,7 @@ function decodeBasicAuth(value: string): { isBasic: boolean; user?: string; pass
       </v-card>
     </div>
     <!-- Main Content -->
-    <div class="flex-1 p-4 pane-scroll">
+    <div class="flex-1 p-4" style="height: 100%">
       <v-fade-transition v-if="apiStore.selectedRequest" mode="out-in">
         <v-card
           density="compact"
@@ -426,25 +475,22 @@ function decodeBasicAuth(value: string): { isBasic: boolean; user?: string; pass
                   >
                 </template>
               </p>
+
               <v-sheet
                 :elevation="2"
                 border
                 rounded
                 class="font-mono pa-2 text-xs rounded mb-2"
                 tag="pre"
-                >{{ apiStore.selectedRequest.body_text }}</v-sheet
               >
-              <template v-if="apiStore.selectedRequest.body_bytes_b64">
-                <p><strong>Body (Base64):</strong></p>
-                <v-sheet
-                  :elevation="2"
-                  border
-                  rounded
-                  class="font-mono pa-2 text-xs rounded mb-2"
-                  tag="pre"
-                  >{{ apiStore.selectedRequest.body_bytes_b64 }}</v-sheet
-                >
-              </template>
+                <vue-monaco-editor
+                  v-model:value="apiStore.selectedRequest.body_text"
+                  :theme="apiStore.darkMode ? 'vs-dark' : 'vs'"
+                  :language="monacoLanguage"
+                  :options="MONACO_EDITOR_OPTIONS"
+                  style="min-height: 300px"
+                  @mount="handleMount"
+              /></v-sheet>
             </template>
           </div>
         </v-card>

@@ -1,19 +1,23 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useTheme } from 'vuetify'
+import { useApiStore } from './stores/apiStore'
 
 const theme = useTheme()
 // Initialize from system preference
 if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
   theme.global.name.value = 'dark'
+  useApiStore().darkMode = theme.global.name.value === 'dark'
 }
 // Listen to system changes
 const media = window.matchMedia?.('(prefers-color-scheme: dark)')
 media?.addEventListener('change', (e) => {
   theme.global.name.value = e.matches ? 'dark' : 'light'
+  useApiStore().darkMode = theme.global.name.value === 'dark'
 })
 function toggleTheme() {
   theme.global.name.value = theme.global.name.value === 'dark' ? 'light' : 'dark'
+  useApiStore().darkMode = theme.global.name.value === 'dark'
 }
 // Full inbound URL (proxied in dev, same origin in prod)
 const inboundUrl = computed(() => `${location.origin}/inbound`)

@@ -7,6 +7,7 @@ import router from './router'
 import 'vuetify/styles'
 import { createVuetify } from 'vuetify'
 import { aliases, mdi } from 'vuetify/iconsets/mdi'
+import { install as VueMonacoEditorPlugin } from '@guolao/vue-monaco-editor'
 import '@mdi/font/css/materialdesignicons.css'
 
 const vuetify = createVuetify({
@@ -23,11 +24,14 @@ const vuetify = createVuetify({
     sets: { mdi },
   },
 })
-
 const app = createApp(App)
 
 app.use(createPinia())
 app.use(router)
 app.use(vuetify)
-
+app.use(VueMonacoEditorPlugin, {
+  paths: {
+    vs: 'https://cdn.jsdelivr.net/npm/monaco-editor@latest/min/vs',
+  },
+})
 app.mount('#app')
