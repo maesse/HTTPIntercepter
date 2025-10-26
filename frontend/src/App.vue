@@ -39,7 +39,7 @@ function selectAllInbound(e: Event) {
       <v-app-bar-title class="font-semibold">
         <div class="flex items-center">
           <div>
-            HTTP Interceptor
+            HTTP Intercepter
             <div class="text-sm mr-4">
               Send a request to: <a href="/inbound" class="text-primary">/inbound</a>
             </div>

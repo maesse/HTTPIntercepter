@@ -40,13 +40,14 @@ function decodeBasicAuth(value: string): { isBasic: boolean; user?: string; pass
 
 <template>
   <!-- Body: Sidebar + Main Content -->
-  <div class="flex flex-1 overflow-hidden m-2 h-100">
+  <div class="flex flex-1 overflow-hidden m-2 two-pane">
 
     <!-- Sidebar -->
-    <v-card elevation="2" class="w-80 ma-1 pa-1">
+     <div class="pane-card">
+    <v-card elevation="2" class="w-80 ma-1 pa-1 pane-scroll flex-1">
 
       <v-fade-transition mode="out-in">
-        <v-list density="compact" lines="two">
+        <v-list density="compact" lines="two" >
           <v-list-subheader class="flex w-100 align-center border-b-lg flexfix">
             <span>
               Requests
@@ -102,10 +103,11 @@ function decodeBasicAuth(value: string): { isBasic: boolean; user?: string; pass
 
         </v-list>
       </v-fade-transition>
-    </v-card>
 
+    </v-card>
+</div>
     <!-- Main Content -->
-    <div class="flex-1 p-4 overflow-y-auto">
+  <div class="flex-1 p-4 pane-scroll">
 
 
       <v-fade-transition v-if="apiStore.selectedRequest" mode="out-in" >
@@ -248,16 +250,25 @@ function decodeBasicAuth(value: string): { isBasic: boolean; user?: string; pass
 }
 .live-chip {
   color: #fff !important;
-.pane-scroll {
-  max-height: calc(100vh - 160px);
-  overflow-y: auto;
-}
   padding-inline: 6px;
 }
 @keyframes livePulse {
   0% { box-shadow: 0 0 4px #ff1744, 0 0 8px rgba(255, 23, 68, 0.6); }
   50% { box-shadow: 0 0 8px #ff1744, 0 0 16px rgba(255, 23, 68, 0.8); }
   100% { box-shadow: 0 0 4px #ff1744, 0 0 8px rgba(255, 23, 68, 0.6); }
+}
+
+/* Two-pane layout sizing and scrolling */
+.two-pane {
+  height: calc(100vh - var(--v-layout-top));
+}
+.pane-card {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+.pane-scroll {
+  overflow-y: auto;
 }
 
 /* Headers table styling */
