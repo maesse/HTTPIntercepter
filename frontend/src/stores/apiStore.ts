@@ -34,7 +34,6 @@ export type ApiRequestSummary = {
 //     body_bytes_b64: Optional[str] = None
 //     body_length: int = 0
 
-
 export type ApiRequest = {
   id: number
   method: string
@@ -48,8 +47,6 @@ export type ApiRequest = {
   body_length: number
   raw_request_b64?: string
 }
-
-
 
 export const useApiStore = defineStore('api', () => {
   const requestList = ref<ApiRequestSummary[]>([])
@@ -83,7 +80,7 @@ export const useApiStore = defineStore('api', () => {
   async function selectRequest(requestId: number) {
     console.log('[api] selectRequest: start id=', requestId)
     selectedRequest.value = null
-    const found = requestList.value.find(r => r.id === requestId)
+    const found = requestList.value.find((r) => r.id === requestId)
     if (found) {
       found.is_new = false
     } else {
@@ -128,7 +125,7 @@ export const useApiStore = defineStore('api', () => {
     try {
       const response = await fetch(`/api/requests/${requestId}`, { method: 'DELETE' })
       if (response.ok) {
-        requestList.value = requestList.value.filter(r => r.id !== requestId)
+        requestList.value = requestList.value.filter((r) => r.id !== requestId)
         requestCache.value.delete(requestId)
         if (selectedRequest.value?.id === requestId) {
           selectedRequest.value = null
@@ -178,10 +175,10 @@ export const useApiStore = defineStore('api', () => {
   }
 
   const listWithRelative = computed(() =>
-    requestList.value.map(r => ({
+    requestList.value.map((r) => ({
       ...r,
-      since: formatDistanceToNow(new Date(r.ts * 1000), { addSuffix: true })
-    }))
+      since: formatDistanceToNow(new Date(r.ts * 1000), { addSuffix: true }),
+    })),
   )
 
   function copyCurl(req: ApiRequest) {
@@ -198,5 +195,18 @@ export const useApiStore = defineStore('api', () => {
     navigator.clipboard?.writeText(finalCmd)
   }
 
-  return { requestList, selectedRequest, updateRequestList, selectRequest, downloadRaw, deleteRequest, connectWS, listWithRelative, copyCurl, isLoadingList, selectedLoadingId, isWsConnected }
+  return {
+    requestList,
+    selectedRequest,
+    updateRequestList,
+    selectRequest,
+    downloadRaw,
+    deleteRequest,
+    connectWS,
+    listWithRelative,
+    copyCurl,
+    isLoadingList,
+    selectedLoadingId,
+    isWsConnected,
+  }
 })
