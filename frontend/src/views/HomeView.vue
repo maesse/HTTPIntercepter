@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { useApiStore } from '@/stores/apiStore'
 import { formatISO9075 } from 'date-fns'
 const apiStore = useApiStore()
@@ -9,6 +9,28 @@ apiStore.connectWS()
 // Headers panel state and helpers
 const headersOpen = ref(true)
 const headerCount = computed(() => Object.keys(apiStore.selectedRequest?.headers || {}).length)
+
+// Authorization reveal toggle
+const showAuth = ref(false)
+watch(
+  () => apiStore.selectedRequest?.id,
+  () => {
+    showAuth.value = false
+  },
+)
+
+// Copy helpers and tooltips
+const bodyCopyTip = ref('Copy to clipboard')
+async function copyBody() {
+  const txt = apiStore.selectedRequest?.body_text ?? apiStore.selectedRequest?.body_bytes_b64 ?? ''
+  if (txt) await navigator.clipboard?.writeText(txt)
+  bodyCopyTip.value = 'Copied!'
+}
+
+function openIpInfo(ip: string) {
+  if (!ip) return
+  window.open(`https://ipinfo.io/${ip}`, '_blank')
+}
 
 function maskAuthorization(value: string) {
   const [scheme] = value.split(/\s+/)
@@ -177,7 +199,7 @@ function decodeBasicAuth(value: string): { isBasic: boolean; user?: string; pass
                 size="small"
                 variant="tonal"
                 @click="apiStore.downloadRaw(apiStore.selectedRequest.id)"
-                >Download Raw</v-btn
+                >Download Full Request</v-btn
               >
               <v-btn
                 size="small"
@@ -202,6 +224,20 @@ function decodeBasicAuth(value: string): { isBasic: boolean; user?: string; pass
           <p class="text-sm">
             Timestamp: {{ formatISO9075(new Date(apiStore.selectedRequest.ts * 1000)) }} •
             <strong>IP:</strong> {{ apiStore.selectedRequest.ip }}
+            <v-tooltip text="Open in ipinfo.io" open-delay="150">
+              <template #activator="{ props }">
+                <v-btn
+                  v-bind="props"
+                  size="x-small"
+                  icon
+                  variant="text"
+                  class="ml-1"
+                  @click="openIpInfo(apiStore.selectedRequest.ip)"
+                >
+                  <v-icon icon="mdi-information-outline" />
+                </v-btn>
+              </template>
+            </v-tooltip>
           </p>
 
           <v-expansion-panels variant="accordion" bg-color="surface-light" class="mt-2">
@@ -257,58 +293,57 @@ function decodeBasicAuth(value: string): { isBasic: boolean; user?: string; pass
                               >
                             </template>
                             <template v-else-if="key.toLowerCase() === 'authorization'">
-                              <template v-if="decodeBasicAuth(value).isBasic">
-                                <v-tooltip open-delay="150">
-                                  <template #activator="{ props }">
-                                    <span class="inline-flex">
-                                      <v-chip
-                                        v-bind="props"
-                                        size="x-small"
-                                        color="red"
-                                        class="ma-1"
-                                        label
-                                        variant="tonal"
-                                        >Basic</v-chip
-                                      >
-                                      <v-chip
-                                        size="x-small"
-                                        color="purple"
-                                        class="ma-1"
-                                        label
-                                        variant="tonal"
-                                        >user: ••••</v-chip
-                                      >
-                                      <v-chip
-                                        size="x-small"
-                                        color="purple"
-                                        class="ma-1"
-                                        label
-                                        variant="tonal"
-                                        >pass: ••••</v-chip
-                                      >
-                                    </span>
-                                  </template>
-                                  <div class="font-mono text-xs pa-1">
-                                    user: {{ decodeBasicAuth(value).user }}<br />
-                                    pass: {{ decodeBasicAuth(value).pass }}
-                                  </div>
-                                </v-tooltip>
-                              </template>
-                              <template v-else>
-                                <v-tooltip :text="value" open-delay="150">
-                                  <template #activator="{ props }">
-                                    <v-chip
-                                      v-bind="props"
-                                      size="x-small"
-                                      color="red"
-                                      class="ma-1"
-                                      label
-                                      variant="tonal"
-                                      >{{ maskAuthorization(value) }}</v-chip
-                                    >
-                                  </template>
-                                </v-tooltip>
-                              </template>
+                              <div class="inline-flex align-center">
+                                <v-btn
+                                  size="x-small"
+                                  icon
+                                  variant="text"
+                                  class="ma-0 mr-1"
+                                  :title="showAuth ? 'Hide credentials' : 'Show credentials'"
+                                  @click="showAuth = !showAuth"
+                                >
+                                  <v-icon :icon="showAuth ? 'mdi-eye-off' : 'mdi-eye'" />
+                                </v-btn>
+                                <template v-if="decodeBasicAuth(value).isBasic">
+                                  <v-chip
+                                    size="x-small"
+                                    color="red"
+                                    class="ma-1"
+                                    label
+                                    variant="tonal"
+                                    >Basic</v-chip
+                                  >
+                                  <v-chip
+                                    size="x-small"
+                                    color="purple"
+                                    class="ma-1"
+                                    label
+                                    variant="tonal"
+                                  >
+                                    user: {{ showAuth ? decodeBasicAuth(value).user : '••••' }}
+                                  </v-chip>
+                                  <v-chip
+                                    size="x-small"
+                                    color="purple"
+                                    class="ma-1"
+                                    label
+                                    variant="tonal"
+                                  >
+                                    pass: {{ showAuth ? decodeBasicAuth(value).pass : '••••' }}
+                                  </v-chip>
+                                </template>
+                                <template v-else>
+                                  <v-chip
+                                    size="x-small"
+                                    color="red"
+                                    class="ma-1"
+                                    label
+                                    variant="tonal"
+                                  >
+                                    {{ showAuth ? value : maskAuthorization(value) }}
+                                  </v-chip>
+                                </template>
+                              </div>
                             </template>
                             <template v-else-if="key.toLowerCase() === 'cookie'">
                               <v-chip
@@ -342,7 +377,41 @@ function decodeBasicAuth(value: string): { isBasic: boolean; user?: string; pass
               apiStore.selectedRequest.body_bytes_b64
             "
           >
-            <p><strong>Body:</strong></p>
+            <p>
+              <strong>Body:</strong>
+              <v-tooltip :text="bodyCopyTip" open-delay="150">
+                <template #activator="{ props }">
+                  <v-btn
+                    v-bind="props"
+                    size="x-small"
+                    icon
+                    variant="text"
+                    class="ml-1"
+                    @mouseenter="bodyCopyTip = 'Copy to clipboard'"
+                    @click="copyBody"
+                  >
+                    <v-icon icon="mdi-content-copy" />
+                  </v-btn>
+                </template>
+              </v-tooltip>
+
+              <!-- Special header renderings -->
+              <template v-if="apiStore.selectedRequest.headers['content-type']">
+                <v-chip
+                  v-for="(part, idx) in splitAndTrim(
+                    apiStore.selectedRequest.headers['content-type'],
+                    ';',
+                  )"
+                  :key="idx"
+                  size="x-small"
+                  color="primary"
+                  class="ma-1"
+                  label
+                  variant="tonal"
+                  >{{ part }}</v-chip
+                >
+              </template>
+            </p>
             <v-sheet
               :elevation="2"
               border

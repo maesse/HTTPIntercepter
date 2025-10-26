@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useTheme } from 'vuetify'
 
 const theme = useTheme()
@@ -19,7 +19,9 @@ function toggleTheme() {
 const inboundUrl = computed(() => `${location.origin}/inbound`)
 function copyInboundUrl() {
   navigator.clipboard?.writeText(inboundUrl.value)
+  inboundCopyTip.value = 'Copied! ✅'
 }
+const inboundCopyTip = ref('Copy to clipboard')
 function selectAllInbound(e: Event) {
   const t = e.target as HTMLInputElement | null
   if (t && typeof t.select === 'function') {
@@ -54,11 +56,26 @@ function selectAllInbound(e: Event) {
               variant="outlined"
               hide-details
               class="font-mono text-sm ma-auto"
-              append-inner-icon="mdi-content-copy"
-              @click:append-inner="copyInboundUrl"
               @click:control="selectAllInbound"
               @focus="selectAllInbound"
-            />
+            >
+              <template #append-inner>
+                <v-tooltip :text="inboundCopyTip" open-delay="150">
+                  <template #activator="{ props }">
+                    <v-btn
+                      v-bind="props"
+                      icon
+                      size="x-small"
+                      variant="text"
+                      @mouseenter="inboundCopyTip = 'Copy to clipboard'"
+                      @click="copyInboundUrl"
+                    >
+                      <v-icon icon="mdi-content-copy" />
+                    </v-btn>
+                  </template>
+                </v-tooltip>
+              </template>
+            </v-text-field>
           </div>
         </div>
       </v-app-bar-title>
