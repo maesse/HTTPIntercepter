@@ -115,7 +115,17 @@ function decodeBasicAuth(value: string): { isBasic: boolean; user?: string; pass
           <h2 class="text-2xl font-bold ma-2">Request Details <span v-if="apiStore.selectedLoadingId" class="text-sm text-gray-500 mb-2">Loading...</span></h2>
           <div class="flex items-center gap-2">
             <div class="text-primary">
-              <p><strong>{{ apiStore.selectedRequest.method }}</strong> {{ apiStore.selectedRequest.path }}</p>
+              <p><strong>{{ apiStore.selectedRequest.method }}</strong> {{ apiStore.selectedRequest.path }}<span v-if="apiStore.selectedRequest.query && Object.keys(apiStore.selectedRequest.query).length"
+                    class="inline-flex items-center flex-wrap gap-1 ml-1">
+                  <span class="text-grey">?</span>
+                  <template v-for="(entry, idx) in Object.entries(apiStore.selectedRequest.query)" :key="entry[0]">
+                    <v-chip size="x-small" color="indigo" label variant="tonal" class="font-mono">{{ entry[0] }}</v-chip>
+                    <span>=</span>
+                    <v-chip size="x-small" color="green" label variant="tonal" class="font-mono">{{ entry[1] }}</v-chip>
+                    <span v-if="idx < Object.entries(apiStore.selectedRequest.query).length - 1">&</span>
+                  </template>
+                </span>
+              </p>
             </div>
             <div class="ml-auto flex gap-2">
               <v-btn size="small" variant="tonal" @click="apiStore.downloadRaw(apiStore.selectedRequest.id)">Download Raw</v-btn>
