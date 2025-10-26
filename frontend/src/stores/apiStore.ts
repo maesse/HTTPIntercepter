@@ -54,6 +54,8 @@ export type ApiRequest = {
 export const useApiStore = defineStore('api', () => {
   const requestList = ref<ApiRequestSummary[]>([])
   const selectedRequest = ref<ApiRequest | null>(null)
+  // Cache for fetched full request details by id
+  const requestCache = ref(new Map<number, ApiRequest>())
   const ws = ref<WebSocket | null>(null)
   const isLoadingList = ref(false)
   const selectedLoadingId = ref<number | null>(null)
@@ -89,11 +91,22 @@ export const useApiStore = defineStore('api', () => {
       return
     }
     selectedLoadingId.value = requestId
+    // Use cached details if available
+    const cached = requestCache.value.get(requestId)
+    if (cached) {
+      console.log('[api] selectRequest: using cached details for id=', requestId)
+      selectedRequest.value = cached
+      selectedLoadingId.value = null
+      return
+    }
     try {
       const response = await fetch(`/api/requests/${requestId}`)
       if (response.ok) {
         const data = await response.json()
-        selectedRequest.value = data as ApiRequest
+        const full = data as ApiRequest
+        selectedRequest.value = full
+        // cache it for subsequent opens
+        requestCache.value.set(requestId, full)
         console.log('[api] selectRequest: done id=', requestId)
       } else {
         console.warn('[api] selectRequest: http error', response.status)
@@ -116,6 +129,7 @@ export const useApiStore = defineStore('api', () => {
       const response = await fetch(`/api/requests/${requestId}`, { method: 'DELETE' })
       if (response.ok) {
         requestList.value = requestList.value.filter(r => r.id !== requestId)
+        requestCache.value.delete(requestId)
         if (selectedRequest.value?.id === requestId) {
           selectedRequest.value = null
         }
