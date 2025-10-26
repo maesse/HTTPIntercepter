@@ -112,6 +112,7 @@ async def inbound(request: Request):
                 "x-forwarded-port",
                 "x-forwarded-proto",
                 "x-forwarded-server",
+                "x-forwarded-for",
                 "x-real-ip",
             }
             filtered: List[Tuple[str, str]] = []
