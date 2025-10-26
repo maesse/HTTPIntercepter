@@ -29,6 +29,20 @@
 			"args": ["install"],
 			"options": { "cwd": "${workspaceFolder}/frontend" },
 			"problemMatcher": []
+		},
+		{
+			"label": "Docker: build image (test)",
+			"type": "shell",
+			"command": "docker",
+			"args": ["build", ".", "-t", "httpintercepter:local"],
+			"options": { "cwd": "${workspaceFolder}" },
+			"problemMatcher": [],
+			"presentation": {
+				"reveal": "never",
+				"panel": "dedicated",
+				"showReuseMessage": false,
+				"clear": true
+			}
 		}
 	]
 }

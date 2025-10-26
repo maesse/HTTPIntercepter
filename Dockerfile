@@ -4,15 +4,18 @@
 FROM node:20-alpine AS frontend
 WORKDIR /app
 COPY frontend/package.json frontend/package-lock.json* ./
-RUN npm ci || npm install
+# Fail early and produce reproducible installs
+RUN npm ci
 COPY frontend/ ./
 RUN npm run build
 
 # 2) Backend runtime
 FROM python:3.12-slim AS runtime
 WORKDIR /app
-ENV PYTHONDONTWRITEBYTECODE=1
-ENV PYTHONUNBUFFERED=1
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    PIP_NO_CACHE_DIR=1
 
 # Copy backend code and install deps
 COPY backend/ ./backend/
@@ -24,4 +27,8 @@ ENV FRONTEND_DIST_DIR=/app/frontend-dist \
     INTERCEPTER_MAX_REQUESTS=100 \
     INTERCEPTER_RETENTION_SECONDS=86400
 EXPOSE 8181
+HEALTHCHECK --interval=10s --timeout=3s --start-period=10s --retries=3 \
+    CMD python -c "import sys,urllib.request; \
+u=urllib.request.urlopen('http://127.0.0.1:8181/healthz'); \
+sys.exit(0 if u.getcode()==200 else 1)" || exit 1
 CMD ["python", "-m", "uvicorn", "backend.app.main:app", "--host", "0.0.0.0", "--port", "8181"]

@@ -10,18 +10,18 @@ import { aliases, mdi } from 'vuetify/iconsets/mdi'
 import '@mdi/font/css/materialdesignicons.css'
 
 const vuetify = createVuetify({
-	theme: {
-		defaultTheme: 'light',
-		themes: {
-			light: { dark: false },
-			dark: { dark: true },
-		},
-	},
-	icons: {
-		defaultSet: 'mdi',
-		aliases,
-		sets: { mdi },
-	},
+  theme: {
+    defaultTheme: 'light',
+    themes: {
+      light: { dark: false },
+      dark: { dark: true },
+    },
+  },
+  icons: {
+    defaultSet: 'mdi',
+    aliases,
+    sets: { mdi },
+  },
 })
 
 const app = createApp(App)

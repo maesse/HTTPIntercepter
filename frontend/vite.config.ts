@@ -20,15 +20,10 @@ export default defineConfig({
       },
     },
   },
-  plugins: [
-    vue(),
-    vuetify({ autoImport: true }),
-    vueDevTools(),
-    tailwindcss(),
-  ],
+  plugins: [vue(), vuetify({ autoImport: true }), vueDevTools(), tailwindcss()],
   resolve: {
     alias: {
-      '@': fileURLToPath(new URL('./src', import.meta.url))
+      '@': fileURLToPath(new URL('./src', import.meta.url)),
     },
   },
 })
