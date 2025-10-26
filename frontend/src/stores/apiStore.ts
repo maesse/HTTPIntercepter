@@ -110,6 +110,24 @@ export const useApiStore = defineStore('api', () => {
     window.open(`/api/requests/${requestId}/raw`, '_blank')
   }
 
+  async function deleteRequest(requestId: number) {
+    console.log('[api] deleteRequest: id=', requestId)
+    try {
+      const response = await fetch(`/api/requests/${requestId}`, { method: 'DELETE' })
+      if (response.ok) {
+        requestList.value = requestList.value.filter(r => r.id !== requestId)
+        if (selectedRequest.value?.id === requestId) {
+          selectedRequest.value = null
+        }
+        console.log('[api] deleteRequest: deleted id=', requestId)
+      } else {
+        console.warn('[api] deleteRequest: http error', response.status)
+      }
+    } catch (e) {
+      console.error('[api] deleteRequest: failed', e)
+    }
+  }
+
   function connectWS() {
     if (ws.value) return
     const proto = location.protocol === 'https:' ? 'wss' : 'ws'
@@ -166,5 +184,5 @@ export const useApiStore = defineStore('api', () => {
     navigator.clipboard?.writeText(finalCmd)
   }
 
-  return { requestList, selectedRequest, updateRequestList, selectRequest, downloadRaw, connectWS, listWithRelative, copyCurl, isLoadingList, selectedLoadingId, isWsConnected }
+  return { requestList, selectedRequest, updateRequestList, selectRequest, downloadRaw, deleteRequest, connectWS, listWithRelative, copyCurl, isLoadingList, selectedLoadingId, isWsConnected }
 })

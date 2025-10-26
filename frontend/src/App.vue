@@ -21,6 +21,16 @@ const inboundUrl = computed(() => `${location.origin}/inbound`)
 function copyInboundUrl() {
   navigator.clipboard?.writeText(inboundUrl.value)
 }
+function selectAllInbound(e: Event) {
+  const t = e.target as HTMLInputElement | null
+  if (t && typeof t.select === 'function') {
+    t.select()
+  } else {
+    // Fallback: find input inside the field
+    const input = (e.currentTarget as HTMLElement | null)?.querySelector?.('input') as HTMLInputElement | null
+    input?.select()
+  }
+}
 </script>
 
 <template>
@@ -36,7 +46,7 @@ function copyInboundUrl() {
           </div>
           <!-- Where to send requests -->
            <div class="w-33">
-          <v-text-field
+      <v-text-field
               :model-value="inboundUrl"
               readonly
               density="compact"
@@ -44,7 +54,9 @@ function copyInboundUrl() {
               hide-details
               class="font-mono text-sm ma-auto"
               append-inner-icon="mdi-content-copy"
-              @click:append-inner="copyInboundUrl"
+        @click:append-inner="copyInboundUrl"
+        @click:control="selectAllInbound"
+        @focus="selectAllInbound"
             /></div>
 
         </div>

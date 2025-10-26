@@ -1,10 +1,40 @@
 <script setup lang="ts">
+import { ref, computed } from 'vue'
 import { useApiStore } from '@/stores/apiStore';
 import { formatISO9075 } from 'date-fns';
 const apiStore = useApiStore();
 apiStore.updateRequestList();
 apiStore.connectWS();
 
+
+// Headers panel state and helpers
+const headersOpen = ref(true)
+const headerCount = computed(() => Object.keys(apiStore.selectedRequest?.headers || {}).length)
+
+function maskAuthorization(value: string) {
+  const [scheme] = value.split(/\s+/)
+  return scheme ? `${scheme} ••••` : '••••'
+}
+
+function splitAndTrim(value: string, sep: RegExp | string) {
+  return value.split(sep).map(s => s.trim()).filter(Boolean)
+}
+
+function decodeBasicAuth(value: string): { isBasic: boolean; user?: string; pass?: string } {
+  const m = value.match(/^Basic\s+(.*)$/i)
+  if (!m) return { isBasic: false }
+  try {
+    const b64 = m[1] as string
+    const decoded = atob(b64)
+    const idx = decoded.indexOf(':')
+    if (idx >= 0) {
+      return { isBasic: true, user: decoded.slice(0, idx), pass: decoded.slice(idx + 1) }
+    }
+    return { isBasic: true, user: decoded, pass: '' }
+  } catch {
+    return { isBasic: false }
+  }
+}
 
 </script>
 
@@ -59,6 +89,7 @@ apiStore.connectWS();
                   width="2"
                   class="ml-2"
                 />
+
               </div>
             </template>
             <template #append>
@@ -81,33 +112,107 @@ apiStore.connectWS();
         <v-card density="compact" elevation="2" class="ma-1 pa-1" :key="apiStore.selectedRequest?.id">
           <h2 class="text-2xl font-bold ma-2">Request Details <span v-if="apiStore.selectedLoadingId" class="text-sm text-gray-500 mb-2">Loading...</span></h2>
           <div class="flex items-center gap-2">
-            <div>
+            <div class="text-primary">
               <p><strong>{{ apiStore.selectedRequest.method }}</strong> {{ apiStore.selectedRequest.path }}</p>
             </div>
             <div class="ml-auto flex gap-2">
               <v-btn size="small" variant="tonal" @click="apiStore.downloadRaw(apiStore.selectedRequest.id)">Download Raw</v-btn>
               <v-btn size="small" variant="tonal" @click="apiStore.copyCurl(apiStore.selectedRequest)">Copy curl</v-btn>
+              <v-btn size="small" variant="tonal" color="error" :disabled="!apiStore.selectedRequest" @click="apiStore.selectedRequest && apiStore.deleteRequest(apiStore.selectedRequest.id)">
+                <v-icon icon="mdi-delete" start />Delete
+              </v-btn>
             </div>
           </div>
 
-          <p class="text-gray-600 text-sm">{{ new Date(apiStore.selectedRequest.ts * 1000).toLocaleString() }} - <strong>IP:</strong> {{ apiStore.selectedRequest.ip }}</p>
+          <p class=" text-sm">Timestamp: {{ formatISO9075(new Date(apiStore.selectedRequest.ts * 1000)) }} • <strong>IP:</strong> {{ apiStore.selectedRequest.ip }}</p>
 
-          <p class="mt-2"><strong>Headers:</strong></p>
-          <v-sheet :elevation="2" border rounded class="pa-2 mb-2">
-            <table>
-            <template v-for="(value, key) in apiStore.selectedRequest.headers" :key="key">
-              <tr>
-                <td><span class="font-mono text-xs break-all"><strong>{{ key }}:</strong></span></td>
-                <td><span class="ml-1 font-mono text-xs break-words">{{ value }}</span></td>
-              </tr>
+          <v-expansion-panels variant="accordion" bg-color="surface-light" class="mt-2">
+            <v-expansion-panel :value="headersOpen" @group:selected="(v:any)=> headersOpen = !!v?.length">
+              <v-expansion-panel-title>
+                <strong>Headers</strong>
+                <span class="ml-2 text-caption text-grey">({{ headerCount }})</span>
+              </v-expansion-panel-title>
+              <v-expansion-panel-text>
+                <v-sheet :elevation="2" border rounded class="pa-2 mb-2">
+                  <table class="headers-table w-100">
+                    <tbody>
+                      <template v-for="(value, key) in apiStore.selectedRequest.headers" :key="key">
+                        <tr>
+                          <td class="key-col"><span class="font-mono text-xs"><strong>{{ key }}:</strong></span></td>
+                          <td class="val-col">
+                            <!-- Special header renderings -->
+                            <template v-if="key.toLowerCase() === 'content-type'">
+                              <v-chip
+                                v-for="(part, idx) in splitAndTrim(value, ';')"
+                                :key="idx"
+                                size="x-small"
+                                color="primary"
+                                class="ma-1"
+                                label
+                                variant="tonal"
+                              >{{ part }}</v-chip>
+                            </template>
+                            <template v-else-if="['accept','accept-encoding','accept-language'].includes(key.toLowerCase())">
+                              <v-chip
+                                v-for="(part, idx) in splitAndTrim(value, ',')"
+                                :key="idx"
+                                size="x-small"
+                                color="secondary"
+                                class="ma-1"
+                                label
+                                variant="tonal"
+                              >{{ part }}</v-chip>
+                            </template>
+                            <template v-else-if="key.toLowerCase() === 'authorization'">
+                              <template v-if="decodeBasicAuth(value).isBasic">
+                                <v-tooltip open-delay="150">
+                                  <template #activator="{ props }">
+                                    <span class="inline-flex">
+                                      <v-chip v-bind="props" size="x-small" color="red" class="ma-1" label variant="tonal">Basic</v-chip>
+                                      <v-chip size="x-small" color="purple" class="ma-1" label variant="tonal">user: ••••</v-chip>
+                                      <v-chip size="x-small" color="purple" class="ma-1" label variant="tonal">pass: ••••</v-chip>
+                                    </span>
+                                  </template>
+                                  <div class="font-mono text-xs pa-1">
+                                    user: {{ decodeBasicAuth(value).user }}<br />
+                                    pass: {{ decodeBasicAuth(value).pass }}
+                                  </div>
+                                </v-tooltip>
+                              </template>
+                              <template v-else>
+                                <v-tooltip :text="value" open-delay="150">
+                                  <template #activator="{ props }">
+                                    <v-chip v-bind="props" size="x-small" color="red" class="ma-1" label variant="tonal">{{ maskAuthorization(value) }}</v-chip>
+                                  </template>
+                                </v-tooltip>
+                              </template>
+                            </template>
+                            <template v-else-if="key.toLowerCase() === 'cookie'">
+                              <v-chip size="x-small" color="teal" class="ma-1" label variant="tonal">
+                                {{ splitAndTrim(value, ';').length }} cookies
+                              </v-chip>
+                              <span class="font-mono text-xs break-words">{{ value }}</span>
+                            </template>
+                            <template v-else>
+                              <span class="font-mono text-xs break-words">{{ value }}</span>
+                            </template>
+                          </td>
+                        </tr>
+                      </template>
+                    </tbody>
+                  </table>
+                </v-sheet>
+              </v-expansion-panel-text>
+            </v-expansion-panel>
+          </v-expansion-panels>
+
+          <template v-if="(apiStore.selectedRequest.body_length ?? 0) > 0 || apiStore.selectedRequest.body_text || apiStore.selectedRequest.body_bytes_b64">
+            <p><strong>Body:</strong></p>
+            <v-sheet :elevation="2" border rounded class="font-mono pa-2 text-xs rounded mb-2" tag="pre">{{ apiStore.selectedRequest.body_text }}</v-sheet>
+            <template v-if="apiStore.selectedRequest.body_bytes_b64">
+              <p><strong>Body (Base64):</strong></p>
+              <v-sheet :elevation="2" border rounded class="font-mono pa-2 text-xs rounded mb-2" tag="pre">{{ apiStore.selectedRequest.body_bytes_b64 }}</v-sheet>
             </template>
-            </table>
-          </v-sheet>
-          <p><strong>Body:</strong></p>
-          <v-sheet :elevation="2" border rounded class="font-mono pa-2 text-xs rounded mb-2" tag="pre">{{ apiStore.selectedRequest.body_text }}</v-sheet>
-          <template v-if="apiStore.selectedRequest.body_bytes_b64">
-            <p><strong>Body (Base64):</strong></p>
-            <v-sheet :elevation="2" border rounded class="font-mono pa-2 text-xs rounded mb-2" tag="pre">{{ apiStore.selectedRequest.body_bytes_b64 }}</v-sheet>
           </template>
         </v-card>
 
@@ -143,11 +248,36 @@ apiStore.connectWS();
 }
 .live-chip {
   color: #fff !important;
+.pane-scroll {
+  max-height: calc(100vh - 160px);
+  overflow-y: auto;
+}
   padding-inline: 6px;
 }
 @keyframes livePulse {
   0% { box-shadow: 0 0 4px #ff1744, 0 0 8px rgba(255, 23, 68, 0.6); }
   50% { box-shadow: 0 0 8px #ff1744, 0 0 16px rgba(255, 23, 68, 0.8); }
   100% { box-shadow: 0 0 4px #ff1744, 0 0 8px rgba(255, 23, 68, 0.6); }
+}
+
+/* Headers table styling */
+.headers-table {
+  border-collapse: collapse;
+  width: 100%;
+  table-layout: auto;
+}
+.headers-table td {
+  vertical-align: top;
+}
+.headers-table tr:nth-child(even) td {
+  /* light/dark friendly slight stripe */
+  background: color-mix(in srgb, var(--v-theme-surface-variant), transparent 88%);
+}
+.headers-table .key-col {
+  white-space: nowrap; /* don't shrink key column */
+  width: 1%;
+}
+.headers-table .val-col {
+  word-break: break-word;
 }
 </style>
