@@ -157,229 +157,85 @@ function decodeBasicAuth(value: string): { isBasic: boolean; user?: string; pass
           class="ma-1 pa-1"
           :key="apiStore.selectedRequest?.id"
         >
-          <h2 class="text-2xl font-bold ma-2">
-            Request Details
-            <span v-if="apiStore.selectedLoadingId" class="text-sm text-gray-500 mb-2"
-              >Loading...</span
-            >
-          </h2>
-          <div class="flex items-center gap-2">
-            <div class="text-primary">
-              <p>
-                <strong>{{ apiStore.selectedRequest.method }}</strong>
-                {{ apiStore.selectedRequest.path
-                }}<span
-                  v-if="
-                    apiStore.selectedRequest.query &&
-                    Object.keys(apiStore.selectedRequest.query).length
-                  "
-                  class="inline-flex items-center flex-wrap gap-1 ml-1"
-                >
-                  <span class="text-grey">?</span>
-                  <template
-                    v-for="(entry, idx) in Object.entries(apiStore.selectedRequest.query)"
-                    :key="entry[0]"
+          <div class="ma-2">
+            <h2 class="text-2xl font-bold ma-2">
+              Request Details
+              <span v-if="apiStore.selectedLoadingId" class="text-sm text-gray-500 mb-2"
+                >Loading...</span
+              >
+            </h2>
+            <div class="flex items-center gap-2">
+              <div class="text-primary">
+                <p>
+                  <strong>{{ apiStore.selectedRequest.method }}</strong>
+                  {{ apiStore.selectedRequest.path
+                  }}<span
+                    v-if="
+                      apiStore.selectedRequest.query &&
+                      Object.keys(apiStore.selectedRequest.query).length
+                    "
+                    class="inline-flex items-center flex-wrap gap-1 ml-1"
                   >
-                    <v-chip size="x-small" color="indigo" label variant="tonal" class="font-mono">{{
-                      entry[0]
-                    }}</v-chip>
-                    <span>=</span>
-                    <v-chip size="x-small" color="green" label variant="tonal" class="font-mono">{{
-                      entry[1]
-                    }}</v-chip>
-                    <span v-if="idx < Object.entries(apiStore.selectedRequest.query).length - 1"
-                      >&</span
+                    <span class="text-grey">?</span>
+                    <template
+                      v-for="(entry, idx) in Object.entries(apiStore.selectedRequest.query)"
+                      :key="entry[0]"
                     >
-                  </template>
-                </span>
-              </p>
-            </div>
-            <div class="ml-auto flex gap-2">
-              <v-btn
-                size="small"
-                variant="tonal"
-                @click="apiStore.downloadRaw(apiStore.selectedRequest.id)"
-                >Download Full Request</v-btn
-              >
-              <v-btn
-                size="small"
-                variant="tonal"
-                @click="apiStore.copyCurl(apiStore.selectedRequest)"
-                >Copy curl</v-btn
-              >
-              <v-btn
-                size="small"
-                variant="tonal"
-                color="error"
-                :disabled="!apiStore.selectedRequest"
-                @click="
-                  apiStore.selectedRequest && apiStore.deleteRequest(apiStore.selectedRequest.id)
-                "
-              >
-                <v-icon icon="mdi-delete" start />Delete
-              </v-btn>
-            </div>
-          </div>
-
-          <p class="text-sm">
-            Timestamp: {{ formatISO9075(new Date(apiStore.selectedRequest.ts * 1000)) }} •
-            <strong>IP:</strong> {{ apiStore.selectedRequest.ip }}
-            <v-tooltip text="Open in ipinfo.io" open-delay="150">
-              <template #activator="{ props }">
+                      <v-chip
+                        size="x-small"
+                        color="indigo"
+                        label
+                        variant="tonal"
+                        class="font-mono"
+                        >{{ entry[0] }}</v-chip
+                      >
+                      <span>=</span>
+                      <v-chip
+                        size="x-small"
+                        color="green"
+                        label
+                        variant="tonal"
+                        class="font-mono"
+                        >{{ entry[1] }}</v-chip
+                      >
+                      <span v-if="idx < Object.entries(apiStore.selectedRequest.query).length - 1"
+                        >&</span
+                      >
+                    </template>
+                  </span>
+                </p>
+              </div>
+              <div class="ml-auto flex gap-2">
                 <v-btn
-                  v-bind="props"
-                  size="x-small"
-                  icon
-                  variant="text"
-                  class="ml-1"
-                  @click="openIpInfo(apiStore.selectedRequest.ip)"
+                  size="small"
+                  variant="tonal"
+                  @click="apiStore.downloadRaw(apiStore.selectedRequest.id)"
+                  ><v-icon icon="mdi-download" /> Full Request</v-btn
                 >
-                  <v-icon icon="mdi-information-outline" />
+                <v-btn
+                  size="small"
+                  variant="tonal"
+                  @click="apiStore.copyCurl(apiStore.selectedRequest)"
+                  ><v-icon icon="mdi-content-copy" /> curl</v-btn
+                >
+                <v-btn
+                  size="small"
+                  variant="tonal"
+                  color="error"
+                  :disabled="!apiStore.selectedRequest"
+                  @click="
+                    apiStore.selectedRequest && apiStore.deleteRequest(apiStore.selectedRequest.id)
+                  "
+                >
+                  <v-icon icon="mdi-delete" start />Delete
                 </v-btn>
-              </template>
-            </v-tooltip>
-          </p>
+              </div>
+            </div>
 
-          <v-expansion-panels variant="accordion" bg-color="surface-light" class="mt-2">
-            <v-expansion-panel
-              :value="headersOpen"
-              @group:selected="(v: any) => (headersOpen = !!v?.length)"
-            >
-              <v-expansion-panel-title>
-                <strong>Headers</strong>
-                <span class="ml-2 text-caption text-grey">({{ headerCount }})</span>
-              </v-expansion-panel-title>
-              <v-expansion-panel-text>
-                <v-sheet :elevation="2" border rounded class="pa-2 mb-2">
-                  <table class="headers-table w-100">
-                    <tbody>
-                      <template v-for="(value, key) in apiStore.selectedRequest.headers" :key="key">
-                        <tr>
-                          <td class="key-col">
-                            <span class="font-mono text-xs"
-                              ><strong>{{ key }}:</strong></span
-                            >
-                          </td>
-                          <td class="val-col">
-                            <!-- Special header renderings -->
-                            <template v-if="key.toLowerCase() === 'content-type'">
-                              <v-chip
-                                v-for="(part, idx) in splitAndTrim(value, ';')"
-                                :key="idx"
-                                size="x-small"
-                                color="primary"
-                                class="ma-1"
-                                label
-                                variant="tonal"
-                                >{{ part }}</v-chip
-                              >
-                            </template>
-                            <template
-                              v-else-if="
-                                ['accept', 'accept-encoding', 'accept-language'].includes(
-                                  key.toLowerCase(),
-                                )
-                              "
-                            >
-                              <v-chip
-                                v-for="(part, idx) in splitAndTrim(value, ',')"
-                                :key="idx"
-                                size="x-small"
-                                color="secondary"
-                                class="ma-1"
-                                label
-                                variant="tonal"
-                                >{{ part }}</v-chip
-                              >
-                            </template>
-                            <template v-else-if="key.toLowerCase() === 'authorization'">
-                              <div class="inline-flex align-center">
-                                <v-btn
-                                  size="x-small"
-                                  icon
-                                  variant="text"
-                                  class="ma-0 mr-1"
-                                  :title="showAuth ? 'Hide credentials' : 'Show credentials'"
-                                  @click="showAuth = !showAuth"
-                                >
-                                  <v-icon :icon="showAuth ? 'mdi-eye-off' : 'mdi-eye'" />
-                                </v-btn>
-                                <template v-if="decodeBasicAuth(value).isBasic">
-                                  <v-chip
-                                    size="x-small"
-                                    color="red"
-                                    class="ma-1"
-                                    label
-                                    variant="tonal"
-                                    >Basic</v-chip
-                                  >
-                                  <v-chip
-                                    size="x-small"
-                                    color="purple"
-                                    class="ma-1"
-                                    label
-                                    variant="tonal"
-                                  >
-                                    user: {{ showAuth ? decodeBasicAuth(value).user : '••••' }}
-                                  </v-chip>
-                                  <v-chip
-                                    size="x-small"
-                                    color="purple"
-                                    class="ma-1"
-                                    label
-                                    variant="tonal"
-                                  >
-                                    pass: {{ showAuth ? decodeBasicAuth(value).pass : '••••' }}
-                                  </v-chip>
-                                </template>
-                                <template v-else>
-                                  <v-chip
-                                    size="x-small"
-                                    color="red"
-                                    class="ma-1"
-                                    label
-                                    variant="tonal"
-                                  >
-                                    {{ showAuth ? value : maskAuthorization(value) }}
-                                  </v-chip>
-                                </template>
-                              </div>
-                            </template>
-                            <template v-else-if="key.toLowerCase() === 'cookie'">
-                              <v-chip
-                                size="x-small"
-                                color="teal"
-                                class="ma-1"
-                                label
-                                variant="tonal"
-                              >
-                                {{ splitAndTrim(value, ';').length }} cookies
-                              </v-chip>
-                              <span class="font-mono text-xs break-words">{{ value }}</span>
-                            </template>
-                            <template v-else>
-                              <span class="font-mono text-xs break-words">{{ value }}</span>
-                            </template>
-                          </td>
-                        </tr>
-                      </template>
-                    </tbody>
-                  </table>
-                </v-sheet>
-              </v-expansion-panel-text>
-            </v-expansion-panel>
-          </v-expansion-panels>
-
-          <template
-            v-if="
-              (apiStore.selectedRequest.body_length ?? 0) > 0 ||
-              apiStore.selectedRequest.body_text ||
-              apiStore.selectedRequest.body_bytes_b64
-            "
-          >
-            <p>
-              <strong>Body:</strong>
-              <v-tooltip :text="bodyCopyTip" open-delay="150">
+            <p class="text-sm">
+              Timestamp: {{ formatISO9075(new Date(apiStore.selectedRequest.ts * 1000)) }} •
+              <strong>IP:</strong> {{ apiStore.selectedRequest.ip }}
+              <v-tooltip text="Open http://ipinfo.io in new tab" open-delay="150">
                 <template #activator="{ props }">
                   <v-btn
                     v-bind="props"
@@ -387,51 +243,210 @@ function decodeBasicAuth(value: string): { isBasic: boolean; user?: string; pass
                     icon
                     variant="text"
                     class="ml-1"
-                    @mouseenter="bodyCopyTip = 'Copy to clipboard'"
-                    @click="copyBody"
+                    @click="openIpInfo(apiStore.selectedRequest.ip)"
                   >
-                    <v-icon icon="mdi-content-copy" />
+                    <v-icon icon="mdi-information-outline" />
                   </v-btn>
                 </template>
               </v-tooltip>
-
-              <!-- Special header renderings -->
-              <template v-if="apiStore.selectedRequest.headers['content-type']">
-                <v-chip
-                  v-for="(part, idx) in splitAndTrim(
-                    apiStore.selectedRequest.headers['content-type'],
-                    ';',
-                  )"
-                  :key="idx"
-                  size="x-small"
-                  color="primary"
-                  class="ma-1"
-                  label
-                  variant="tonal"
-                  >{{ part }}</v-chip
-                >
-              </template>
             </p>
-            <v-sheet
-              :elevation="2"
-              border
-              rounded
-              class="font-mono pa-2 text-xs rounded mb-2"
-              tag="pre"
-              >{{ apiStore.selectedRequest.body_text }}</v-sheet
+
+            <v-expansion-panels variant="accordion" bg-color="surface-light" class="mt-2">
+              <v-expansion-panel
+                :value="headersOpen"
+                @group:selected="(v: any) => (headersOpen = !!v?.length)"
+              >
+                <v-expansion-panel-title>
+                  <strong>Headers</strong>
+                  <span class="ml-2 text-caption text-grey">({{ headerCount }})</span>
+                </v-expansion-panel-title>
+                <v-expansion-panel-text>
+                  <v-sheet :elevation="2" border rounded class="pa-2 mb-2">
+                    <table class="headers-table w-100">
+                      <tbody>
+                        <template
+                          v-for="(value, key) in apiStore.selectedRequest.headers"
+                          :key="key"
+                        >
+                          <tr>
+                            <td class="key-col">
+                              <span class="font-mono text-xs"
+                                ><strong>{{ key }}:</strong></span
+                              >
+                            </td>
+                            <td class="val-col">
+                              <!-- Special header renderings -->
+                              <template v-if="key.toLowerCase() === 'content-type'">
+                                <v-chip
+                                  v-for="(part, idx) in splitAndTrim(value, ';')"
+                                  :key="idx"
+                                  size="x-small"
+                                  color="primary"
+                                  class="ma-1"
+                                  label
+                                  variant="tonal"
+                                  >{{ part }}</v-chip
+                                >
+                              </template>
+                              <template
+                                v-else-if="
+                                  ['accept', 'accept-encoding', 'accept-language'].includes(
+                                    key.toLowerCase(),
+                                  )
+                                "
+                              >
+                                <v-chip
+                                  v-for="(part, idx) in splitAndTrim(value, ',')"
+                                  :key="idx"
+                                  size="x-small"
+                                  color="secondary"
+                                  class="ma-1"
+                                  label
+                                  variant="tonal"
+                                  >{{ part }}</v-chip
+                                >
+                              </template>
+                              <template v-else-if="key.toLowerCase() === 'authorization'">
+                                <div class="inline-flex align-center">
+                                  <v-btn
+                                    size="x-small"
+                                    icon
+                                    variant="text"
+                                    class="ma-0 mr-1"
+                                    :title="showAuth ? 'Hide credentials' : 'Show credentials'"
+                                    @click="showAuth = !showAuth"
+                                  >
+                                    <v-icon :icon="showAuth ? 'mdi-eye-off' : 'mdi-eye'" />
+                                  </v-btn>
+                                  <template v-if="decodeBasicAuth(value).isBasic">
+                                    <v-chip
+                                      size="x-small"
+                                      color="red"
+                                      class="ma-1"
+                                      label
+                                      variant="tonal"
+                                      >Basic</v-chip
+                                    >
+                                    <v-chip
+                                      size="x-small"
+                                      color="purple"
+                                      class="ma-1"
+                                      label
+                                      variant="tonal"
+                                    >
+                                      {{ showAuth ? decodeBasicAuth(value).user : '••••' }} </v-chip
+                                    >:
+                                    <v-chip
+                                      size="x-small"
+                                      color="purple"
+                                      class="ma-1"
+                                      label
+                                      variant="tonal"
+                                    >
+                                      {{ showAuth ? decodeBasicAuth(value).pass : '••••' }}
+                                    </v-chip>
+                                  </template>
+                                  <template v-else>
+                                    <v-chip
+                                      size="x-small"
+                                      color="red"
+                                      class="ma-1"
+                                      label
+                                      variant="tonal"
+                                    >
+                                      {{ showAuth ? value : maskAuthorization(value) }}
+                                    </v-chip>
+                                  </template>
+                                </div>
+                              </template>
+                              <template v-else-if="key.toLowerCase() === 'cookie'">
+                                <v-chip
+                                  size="x-small"
+                                  color="teal"
+                                  class="ma-1"
+                                  label
+                                  variant="tonal"
+                                >
+                                  {{ splitAndTrim(value, ';').length }} cookies
+                                </v-chip>
+                                <span class="font-mono text-xs break-words">{{ value }}</span>
+                              </template>
+                              <template v-else>
+                                <span class="font-mono text-xs break-words">{{ value }}</span>
+                              </template>
+                            </td>
+                          </tr>
+                        </template>
+                      </tbody>
+                    </table>
+                  </v-sheet>
+                </v-expansion-panel-text>
+              </v-expansion-panel>
+            </v-expansion-panels>
+
+            <template
+              v-if="
+                (apiStore.selectedRequest.body_length ?? 0) > 0 ||
+                apiStore.selectedRequest.body_text ||
+                apiStore.selectedRequest.body_bytes_b64
+              "
             >
-            <template v-if="apiStore.selectedRequest.body_bytes_b64">
-              <p><strong>Body (Base64):</strong></p>
+              <p>
+                <strong>Body:</strong>
+                <v-tooltip :text="bodyCopyTip" open-delay="150">
+                  <template #activator="{ props }">
+                    <v-btn
+                      v-bind="props"
+                      size="x-small"
+                      icon
+                      variant="text"
+                      class="ml-1"
+                      @mouseenter="bodyCopyTip = 'Copy to clipboard'"
+                      @click="copyBody"
+                    >
+                      <v-icon icon="mdi-content-copy" />
+                    </v-btn>
+                  </template>
+                </v-tooltip>
+
+                <!-- Special header renderings -->
+                <template v-if="apiStore.selectedRequest.headers['content-type']">
+                  <v-chip
+                    v-for="(part, idx) in splitAndTrim(
+                      apiStore.selectedRequest.headers['content-type'],
+                      ';',
+                    )"
+                    :key="idx"
+                    size="x-small"
+                    color="primary"
+                    class="ma-1"
+                    label
+                    variant="tonal"
+                    >{{ part }}</v-chip
+                  >
+                </template>
+              </p>
               <v-sheet
                 :elevation="2"
                 border
                 rounded
                 class="font-mono pa-2 text-xs rounded mb-2"
                 tag="pre"
-                >{{ apiStore.selectedRequest.body_bytes_b64 }}</v-sheet
+                >{{ apiStore.selectedRequest.body_text }}</v-sheet
               >
+              <template v-if="apiStore.selectedRequest.body_bytes_b64">
+                <p><strong>Body (Base64):</strong></p>
+                <v-sheet
+                  :elevation="2"
+                  border
+                  rounded
+                  class="font-mono pa-2 text-xs rounded mb-2"
+                  tag="pre"
+                  >{{ apiStore.selectedRequest.body_bytes_b64 }}</v-sheet
+                >
+              </template>
             </template>
-          </template>
+          </div>
         </v-card>
       </v-fade-transition>
       <template v-else>
