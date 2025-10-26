@@ -4,6 +4,10 @@ A tiny debug HTTP intercepter: it exposes an `/inbound` endpoint that accepts an
 
 [![build-and-push-docker-image](https://github.com/maesse/HTTPIntercepter/actions/workflows/build-and-push-docker-image.yml/badge.svg?branch=main)](https://github.com/maesse/HTTPIntercepter/actions/workflows/build-and-push-docker-image.yml)
 
+## Demo
+
+Try it live: https://intercept.ns2browser.com/
+
 ## Structure
 
 - `backend/` — FastAPI app, pytest tests
