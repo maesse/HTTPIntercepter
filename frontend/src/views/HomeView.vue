@@ -198,7 +198,7 @@ const monacoLanguage = computed(() => {
       </v-card>
     </div>
     <!-- Main Content -->
-    <div class="flex-1 p-4" style="height: 100%">
+    <div class="flex-1 p-4 pane-scroll" style="height: 100%">
       <v-fade-transition v-if="apiStore.selectedRequest" mode="out-in">
         <v-card
           density="compact"

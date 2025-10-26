@@ -89,6 +89,15 @@ function selectAllInbound(e: Event) {
         @click="toggleTheme"
         :title="`Toggle theme (now: ${theme.global.name.value})`"
       ></v-btn>
+      <v-btn
+        icon="mdi-github"
+        variant="text"
+        href="https://github.com/maesse/HTTPIntercepter"
+        target="_blank"
+        rel="noopener"
+        title="Open GitHub repository"
+        aria-label="Open GitHub repository"
+      ></v-btn>
     </v-app-bar>
     <v-main>
       <RouterView />
